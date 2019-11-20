@@ -122,54 +122,55 @@ func TestExtras(t *testing.T) {
 	}
 }
 
-func TestDeleteProp(t *testing.T) {
-	const jsonSchemaTest = `{
+const jsonSchemaTest = `{
+	"type": "object",
+	"properties": {
+	  "country": {
+		"type": "string",
+		"attrs": {
+		  "title": "sssss"
+		},
+		"minLength": 2,
+		"maxLength": 2,
+		"unique": true
+	  },
+	  "list": {
+		"type": "array",
+		"items": {
+		  "type": "object",
+		  "properties": {
+			"name": {
+			  "type": "boolean"
+			}
+		  }
+		}
+	  },
+	  "name": {
+		"type": "integer"
+	  },
+	  "quantity": {
 		"type": "object",
 		"properties": {
-		  "country": {
+		  "unit": {
 			"type": "string",
-			"attrs": {
-			  "title": "sssss"
-			},
-			"minLength": 2,
-			"maxLength": 2,
-			"unique": true
+			"enum": [
+			  "kg",
+			  "lb"
+			]
 		  },
-		  "list": {
-			"type": "array",
-			"items": {
-			  "type": "object",
-			  "properties": {
-				"name": {
-				  "type": "boolean"
-				}
-			  }
-			}
-		  },
-		  "name": {
-			"type": "integer"
-		  },
-		  "quantity": {
-			"type": "object",
-			"properties": {
-			  "unit": {
-				"type": "string",
-				"enum": [
-				  "kg",
-				  "lb"
-				]
-			  },
-			  "value": {
-				"type": "number"
-			  }
-			},
-			"format": "amount"
+		  "value": {
+			"type": "number"
 		  }
 		},
-		"required": [
-		  "country"
-		]
-	  }  `
+		"format": "amount"
+	  }
+	},
+	"required": [
+	  "country"
+	]
+  }  `
+
+func TestDeleteProp(t *testing.T) {
 
 	stringReader := strings.NewReader(jsonSchemaTest)
 	s, err := schema.Read(stringReader)
@@ -186,4 +187,17 @@ func TestDeleteProp(t *testing.T) {
 
 	bytes, err := s.MarshalJSON()
 	fmt.Println(string(bytes))
+}
+
+func TestGetAllProps(t *testing.T) {
+
+	stringReader := strings.NewReader(jsonSchemaTest)
+	s, err := schema.Read(stringReader)
+	if err != nil {
+		t.Errorf("failed to read schema: %s", err)
+		return
+	}
+	result := s.GetAllProps()
+
+	fmt.Println(result)
 }

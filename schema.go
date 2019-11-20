@@ -2,6 +2,7 @@ package schema
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -335,6 +336,37 @@ func (s *Schema) deleteProp(propertyPathArr []string) bool {
 		}
 	}
 	return false
+}
+
+// GetAllProps returns all properties in an array of string
+func (s *Schema) GetAllProps() []string {
+	result := []string{}
+	s.getAllProperties("", &result)
+	return result
+}
+
+func (s *Schema) getAllProperties(parentPath string, result *[]string) {
+	if s.Items != nil {
+		for _, subSchema := range s.Items.Schemas {
+			if canBeType(subSchema, ObjectType) || canBeType(subSchema, ArrayType) {
+				subSchema.getAllProperties(parentPath, result)
+			}
+		}
+	}
+	for key, subSchema := range s.Properties {
+		var path string
+		if parentPath == "" {
+			path = key
+		} else {
+			path = fmt.Sprintf("%s.%s", parentPath, key)
+		}
+		if canBeType(subSchema, ObjectType) || canBeType(subSchema, ArrayType) {
+			subSchema.getAllProperties(path, result)
+		} else {
+			*result = append(*result, path)
+			fmt.Println(path)
+		}
+	}
 }
 
 // Scope returns the scope ID for this schema
