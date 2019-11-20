@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lestrrat-go/jsschema"
+	schema "github.com/lestrrat-go/jsschema"
 	"github.com/lestrrat-go/jsschema/validator"
 	"github.com/stretchr/testify/assert"
 )
@@ -120,4 +120,70 @@ func TestExtras(t *testing.T) {
 			return
 		}
 	}
+}
+
+func TestDeleteProp(t *testing.T) {
+	const jsonSchemaTest = `{
+		"type": "object",
+		"properties": {
+		  "country": {
+			"type": "string",
+			"attrs": {
+			  "title": "sssss"
+			},
+			"minLength": 2,
+			"maxLength": 2,
+			"unique": true
+		  },
+		  "list": {
+			"type": "array",
+			"items": {
+			  "type": "object",
+			  "properties": {
+				"name": {
+				  "type": "boolean"
+				}
+			  }
+			}
+		  },
+		  "name": {
+			"type": "integer"
+		  },
+		  "quantity": {
+			"type": "object",
+			"properties": {
+			  "unit": {
+				"type": "string",
+				"enum": [
+				  "kg",
+				  "lb"
+				]
+			  },
+			  "value": {
+				"type": "number"
+			  }
+			},
+			"format": "amount"
+		  }
+		},
+		"required": [
+		  "country"
+		]
+	  }  `
+
+	stringReader := strings.NewReader(jsonSchemaTest)
+	s, err := schema.Read(stringReader)
+	if err != nil {
+		t.Errorf("failed to read schema: %s", err)
+		return
+	}
+	s.DeleteProp("list.name")
+	s.DeleteProp("name")
+	s.DeleteProp("country")
+	s.DeleteProp("amount.unit")
+	s.DeleteProp("amount.value")
+	s.DeleteProp("quantity")
+
+	bytes, err := s.MarshalJSON()
+	fmt.Println(string(bytes))
 }

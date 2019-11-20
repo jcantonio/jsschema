@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/lestrrat-go/jsref"
 	"github.com/lestrrat-go/jsref/provider"
@@ -274,6 +275,63 @@ func (s *Schema) IsPropRequired(pname string) bool {
 	for _, name := range s.Required {
 		if name == pname {
 			return true
+		}
+	}
+	return false
+}
+
+// DeleteProp deletes property via the split of the attribute path
+// Return whether the property has been deleted
+func (s *Schema) DeleteProp(propertyPath string) bool {
+	return s.deleteProp(strings.Split(propertyPath, "."))
+}
+func (s *Schema) deleteProp(propertyPathArr []string) bool {
+	if len(propertyPathArr) == 1 {
+		pname := propertyPathArr[0]
+		required := s.Required
+		for _, name := range required {
+			if name == pname {
+				for i, v := range required {
+					if v == pname {
+						required = append(required[:i], required[i+1:]...)
+						s.Required = required
+						break
+					}
+				}
+			}
+		}
+		if _, ok := s.Properties[pname]; ok {
+			delete(s.Properties, pname)
+			return true
+		}
+		if s.Items != nil {
+			for _, subSchema := range s.Items.Schemas {
+				if _, ok := subSchema.Properties[pname]; ok {
+					delete(subSchema.Properties, pname)
+					if len(subSchema.Properties) == 0 {
+						s.Items = nil
+					}
+					return true
+				}
+			}
+		}
+	} else {
+		pname := propertyPathArr[0]
+		if subSchema, ok := s.Properties[pname]; ok {
+			hasBeenDeleted := subSchema.deleteProp(propertyPathArr[1:])
+			if hasBeenDeleted {
+				// delete if nothing remains
+				if (subSchema.Properties == nil || len(subSchema.Properties) < 1) && subSchema.Items == nil {
+					delete(s.Properties, pname)
+				}
+			}
+			return hasBeenDeleted
+		} else {
+			if s.Items != nil {
+				for _, subSchema := range s.Items.Schemas {
+					return subSchema.deleteProp(propertyPathArr[1:])
+				}
+			}
 		}
 	}
 	return false
